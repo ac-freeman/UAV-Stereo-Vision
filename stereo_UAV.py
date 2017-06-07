@@ -8,7 +8,7 @@ from stereovision.calibration import StereoCalibration
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 from multiprocessing import Process
-from time import sleep
+from time import sleep, time
 import RPi.GPIO as gp
 
 def setupBoard():
@@ -70,17 +70,21 @@ def finished():
     
 
 camera = PiCamera()
-res = (320, 240)
+width = 320
+height = 240
+minBoxArea = 150
+res = (width, height)
 camera.resolution = res
-camera.framerate = 5
+camera.framerate = 90
 ##camera.exposure_mode = 'off'
 rawCapture = PiRGBArray(camera, size=res)
 calibration = StereoCalibration(input_folder="/home/pi/Desktop/programs2017/PiCAM PHOTOS/calibfiles")
 block_matcher = StereoBM() # from stereovision.blockmatchers
 
-block_matcher.search_range = 64
+block_matcher.search_range = 80
 block_matcher.bm_preset = 0
 block_matcher.window_size = 27
+kernel = np.ones((5,5),np.uint8)
 
 
 
@@ -92,6 +96,7 @@ counter = 0
 try: 
     while True:
         counter += 1
+        startT = time()
 
         cameras("C")
         if counter == 7:
@@ -101,7 +106,7 @@ try:
         camera.capture(rawCapture, format="bgr", use_video_port=True)
         frameC = rawCapture.array
 
-##        cv2.imshow("frameC", frameC)
+
         rawCapture.truncate(0)
 
         sleep(0.03)
@@ -116,7 +121,7 @@ try:
         camera.capture(rawCapture, format="bgr", use_video_port=True)
         frameA = rawCapture.array
         
-##        cv2.imshow("frameA", frameA)
+
         rawCapture.truncate(0)
     
         rectified_pair = calibration.rectify((frameA,frameC))
@@ -125,62 +130,49 @@ try:
 
         disparity = disparity / disparity.max()
 
-        #disparity2 = cv2.cvtColor(disparity, cv2.COLOR_GRAY2BGR)
-        #shapeMask = cv2.inRange(disparity, 0.9, 1.0)
-        _, shapeMask = cv2.threshold(disparity, 0.9, 1.0, cv2.THRESH_BINARY)
+        _, shapeMask = cv2.threshold(disparity, 0.8, 1.0, cv2.THRESH_BINARY)
         
-##        cv2.imshow("disparity", disparity)
-##        cv2.imshow("disparity2", shapeMask)
 
-        print(shapeMask.shape)
-        #print(shapeMask)
-
+        
+##        shapeMask = cv2.morphologyEx(shapeMask, cv2.MORPH_CLOSE,kernel)
         disparity3 = shapeMask.copy()
         disparity3 = disparity3 * 255.0
         disparity3 = disparity3.astype(int)
 
-        #print(frameA)
-        #print(disparity3)
+        
 
-        #disparity3 = cv2.cvtColor(disparity3, cv2.COLOR_BGR2GRAY);
-
-        #disparity3[disparity3 != 0.0] = 1.0
-
-        if counter == 5:
-            
-            print(shapeMask)
-            print(shapeMask.max())
-            print(disparity)
-            print(disparity.max())
+        
         disparity3 = cv2.convertScaleAbs(disparity3)
         contours, _ = cv2.findContours(disparity3, 1, 2)
 
         disparity3 = cv2.cvtColor(disparity3, cv2.COLOR_GRAY2RGB)
 
-##        print(contours)
-        for cnt in contours:
-            #[x,y,w,h] = cv2.boundingRect(cnt)
-            #cv2.rectangle(img,(x,y),(x+w,y+h),(255,0,0),2)
-            
+
+        for cnt in contours:          
             rect = cv2.minAreaRect(cnt)
             box = cv2.cv.BoxPoints(rect)
-
-            # store 4 corners to box
             
+            # store 4 corners to box    
             box = np.int0(box)
-##            yMax = 0
-##            yMin = 0
+            box2 = box.copy()
+            map(lambda x:x[0]+20, box2)
+
+            # get box area with shoelace formula
+            n = 4
+            area = 0.0
+            for i in range(n):
+                j = (i+1) % n
+                area += box[i][0] * box[j][1]
+                area -= box[j][0] * box[i][1]
+            area = abs(area) / 2.0         
+
             middle = False
             for point in box:
-                if (point[1] > 80 and point[1] < 160):
+                if (point[1] > (height/3) and point[1] < (height*(3/2)) and area > minBoxArea):
                     cv2.drawContours(disparity, [box], 0, (255, 0, 0), 2)
+                    cv2.drawContours(rectified_pair[0], [box2], 0, (255, 0, 0), 2)
                     middle = True
                     break
-##                elif point[1]>160 and point[1]>yMax:
-##                   yMax = point[1]
-##                elif point[1]<80 and point[1]<yMin:
-##                    yMin = point[1]
-##            if yMin != 0 && yMax !=00
 
             if not middle:
                 yMin = max(box, key=lambda x:x[1])
@@ -189,19 +181,17 @@ try:
                 yMax = yMax[1]
 
 
-                if yMax > 160 and yMin < 80:
+                if yMax > (height*(3/2)) and yMin < (height/3) and area >minBoxArea:
                     cv2.drawContours(disparity, [box], 0, (255, 0, 0), 2)
-                
-            # blue rectangle
-            # print(box)
+                    cv2.drawContours(rectified_pair[0],[box2], 0, (255, 0, 0), 2)
 
-##        cv2.imshow("disparity3", disparity)
-##        cv2.imshow("a",frameA)
-##        cv2.imshow("c",frameC)
-        cv2.line(disparity, (0,80), (320,80), 1, 8, 0)
-        cv2.line(disparity, (0,160), (320,160), 1, 8, 0)
-        cv2.imshow("disparity w/ boxes", disparity)
 
+##        cv2.imshow("a",rectified_pair[0])
+
+        cv2.line(disparity, (0,80), (320,80), .5, 8, 0)
+        cv2.line(disparity, (0,160), (320,160), .5, 8, 0)
+        endT = time()
+        print("Frame " + str(counter) +" complete -- Time: " + str(endT-startT))
         key = cv2.waitKey(1)
 
 
