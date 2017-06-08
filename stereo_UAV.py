@@ -10,7 +10,7 @@ from piCams import *
 camera = PiCamera()
 width = 320
 height = 240
-minBoxArea = 150
+minBoxArea = 1000
 res = (width, height)
 camera.resolution = res
 camera.framerate = 90
@@ -22,10 +22,11 @@ block_matcher = StereoBM() # from stereovision.blockmatchers
 block_matcher.search_range = 80
 block_matcher.bm_preset = 0
 block_matcher.window_size = 27
-kernel = np.ones((5,5),np.uint8)
 
 setupBoard()
 sleep(0.5) # enable camera to start up
+
+kernel = np.ones((21,21), np.uint8)
 
 counter = 0
 try: 
@@ -44,7 +45,7 @@ try:
 
         rawCapture.truncate(0)
 
-        sleep(0.03)
+        sleep(0.01)
 
         cameras("A")
         if counter == 7:
@@ -92,7 +93,7 @@ try:
             box2 = box.copy()
             map(lambda x:x[0]+20, box2)
 
-            # get box area with hoelace formula
+            # get box area with shoelace formula
             n = 4
             area = 0.0
             for i in range(n):
@@ -101,6 +102,7 @@ try:
                 area -= box[j][0] * box[i][1]
             area = abs(area) / 2.0         
 
+            
             middle = False
             for point in box:
                 if (point[1] > (height/3) and point[1] < (height*(3/2)) and area > minBoxArea):
@@ -122,14 +124,13 @@ try:
 
 
         cv2.imshow("a",rectified_pair[0])
-
+        cv2.imshow("disparity", disparity)
+##        cv2.imshow("b", rectified_pair[1])
         cv2.line(disparity, (0,80), (320,80), .5, 8, 0)
         cv2.line(disparity, (0,160), (320,160), .5, 8, 0)
         endT = time()
         print("Frame " + str(counter) +" complete -- Time: " + str(endT-startT))
         key = cv2.waitKey(1)
-
-
         
 except KeyboardInterrupt:
     print(disparity)
