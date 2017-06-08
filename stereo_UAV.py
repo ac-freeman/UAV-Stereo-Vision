@@ -1,74 +1,12 @@
 import numpy as np
-from collections import deque
-import argparse
-import imutils
 import cv2
 from stereovision.blockmatchers import StereoBM, StereoSGBM
 from stereovision.calibration import StereoCalibration
 from picamera.array import PiRGBArray
 from picamera import PiCamera
-from multiprocessing import Process
 from time import sleep, time
-import RPi.GPIO as gp
-
-def setupBoard():
-    """Enables the correct GPIO pins
-    to allow for the Pi to interface
-    with up to 4 cameras using the
-    Arducam Multi Camera Adapter
-    Module."""
-    gp.setwarnings(False)
-    gp.setmode(gp.BOARD)
-
-    gp.setup(7, gp.OUT)
-    gp.setup(11, gp.OUT)
-    gp.setup(12, gp.OUT)
-     
-    gp.setup(15, gp.OUT)
-    gp.setup(16, gp.OUT)
-    gp.setup(21, gp.OUT)
-    gp.setup(22, gp.OUT)
-
-    gp.output(11, True)
-    gp.output(12, True)
-    gp.output(15, True)
-    gp.output(16, True)
-    gp.output(21, True)
-    gp.output(22, True)
-
-def cameras(cam):
-    """Enables the correct GPIO pins to
-    enable the correct camera using the
-    Arducam Multi Camera Adapter
-    Module."""
+from piCams import *
     
-    if cam == "A":
-        gp.output(7, False)
-        gp.output(11, False)
-        gp.output(12, True)
-    elif cam == "B":
-        gp.output(7, True)
-        gp.output(11, False)
-        gp.output(12, True)
-    elif cam == "C":
-        gp.output(7, False)
-        gp.output(11, True)
-        gp.output(12, False)
-    elif cam == "D":
-        gp.output(7, True)
-        gp.output(11, True)
-        gp.output(12, False)
-        
-    else: raise ValueError, "Need to input A, B, C, or D for cameras."
-
-def finished():
-    '''Finished with all the cameras.'''
-    
-    gp.output(7, False)
-    gp.output(11, False)
-    gp.output(12, True)
-    
-
 camera = PiCamera()
 width = 320
 height = 240
@@ -85,9 +23,6 @@ block_matcher.search_range = 80
 block_matcher.bm_preset = 0
 block_matcher.window_size = 27
 kernel = np.ones((5,5),np.uint8)
-
-
-
 
 setupBoard()
 sleep(0.5) # enable camera to start up
@@ -157,7 +92,7 @@ try:
             box2 = box.copy()
             map(lambda x:x[0]+20, box2)
 
-            # get box area with shoelace formula
+            # get box area with hoelace formula
             n = 4
             area = 0.0
             for i in range(n):
@@ -186,7 +121,7 @@ try:
                     cv2.drawContours(rectified_pair[0],[box2], 0, (255, 0, 0), 2)
 
 
-##        cv2.imshow("a",rectified_pair[0])
+        cv2.imshow("a",rectified_pair[0])
 
         cv2.line(disparity, (0,80), (320,80), .5, 8, 0)
         cv2.line(disparity, (0,160), (320,160), .5, 8, 0)
