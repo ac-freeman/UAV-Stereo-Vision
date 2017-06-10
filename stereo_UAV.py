@@ -6,48 +6,44 @@ from picamera.array import PiRGBArray
 from picamera import PiCamera
 from time import sleep, time
 from piCams import *
-    
+
+# set up camera object
+# interface with one port
 camera = PiCamera()
 width = 320
 height = 240
-minBoxArea = 1000
+minBoxArea = 150
 res = (width, height)
 camera.resolution = res
 camera.framerate = 90
-##camera.exposure_mode = 'off'
+
 rawCapture = PiRGBArray(camera, size=res)
-calibration = StereoCalibration(input_folder="/home/pi/Desktop/programs2017/PiCAM PHOTOS/calibfiles")
+calibration = StereoCalibration(input_folder = "/home/pi/Desktop/programs2017/PiCAM PHOTOS/calibfiles")
 block_matcher = StereoBM() # from stereovision.blockmatchers
 
 block_matcher.search_range = 80
 block_matcher.bm_preset = 0
 block_matcher.window_size = 27
+kernel = np.ones((5,5),np.uint8)
 
 setupBoard()
 sleep(0.5) # enable camera to start up
 
-kernel = np.ones((21,21), np.uint8)
-
 counter = 0
+
+# write frame time to a txt file
+timeData = open("timeData.txt", 'w')
+# clear old data
+timeData.truncate()
+
 try: 
     while True:
         counter += 1
-        startT = time()
+        # begin frame calculation
+        startTime = time()
 
+        # left frame
         cameras("C")
-        if counter == 7:
-            camera.exposure_mode = 'off'
-            camera.shutter_speed = (camera.exposure_speed)
-            camera.awb_mode = 'fluorescent'
-        camera.capture(rawCapture, format="bgr", use_video_port=True)
-        frameC = rawCapture.array
-
-
-        rawCapture.truncate(0)
-
-        sleep(0.01)
-
-        cameras("A")
         if counter == 7:
             camera.exposure_mode = 'off'
             camera.shutter_speed = (camera.exposure_speed)
@@ -55,33 +51,36 @@ try:
             print("auto exposure off")
 
         camera.capture(rawCapture, format="bgr", use_video_port=True)
-        frameA = rawCapture.array
-        
+        frameC = rawCapture.array
+        rawCapture.truncate(0)
 
+        sleep(0.03)
+
+        # right frame
+        cameras("A")
+        camera.capture(rawCapture, format="bgr", use_video_port=True)
+        frameA = rawCapture.array
         rawCapture.truncate(0)
     
         rectified_pair = calibration.rectify((frameA,frameC))
 
         disparity = block_matcher.get_disparity(rectified_pair)
-
         disparity = disparity / disparity.max()
+        # normalize disparity in [0, 1]
 
         _, shapeMask = cv2.threshold(disparity, 0.8, 1.0, cv2.THRESH_BINARY)
         
-
-        
 ##        shapeMask = cv2.morphologyEx(shapeMask, cv2.MORPH_CLOSE,kernel)
-        disparity3 = shapeMask.copy()
-        disparity3 = disparity3 * 255.0
-        disparity3 = disparity3.astype(int)
+        disparityProcessed = shapeMask.copy()
+        disparityProcessed = disparityProcessed * 255.0
+        disparityProcessed = disparityProcessed.astype(int)
+        # bring into 255 range
 
-        
+        disparityProcessed = cv2.convertScaleAbs(disparityProcessed)
+        contours, _ = cv2.findContours(disparityProcessed, 1, 2)
+        # find contours from thresholded disparity map
 
-        
-        disparity3 = cv2.convertScaleAbs(disparity3)
-        contours, _ = cv2.findContours(disparity3, 1, 2)
-
-        disparity3 = cv2.cvtColor(disparity3, cv2.COLOR_GRAY2RGB)
+        disparityProcessed = cv2.cvtColor(disparityProcessed, cv2.COLOR_GRAY2RGB)
 
 
         for cnt in contours:          
@@ -90,27 +89,26 @@ try:
             
             # store 4 corners to box    
             box = np.int0(box)
-            box2 = box.copy()
-            map(lambda x:x[0]+20, box2)
+            boxOverlayRectified = box.copy()
+            map(lambda x:x[0]+20, boxOverlayRectified)
 
             # get box area with shoelace formula
-            n = 4
             area = 0.0
-            for i in range(n):
-                j = (i+1) % n
+            for i in range(4):
+                j = (i+1) % 4
                 area += box[i][0] * box[j][1]
                 area -= box[j][0] * box[i][1]
             area = abs(area) / 2.0         
 
-            
             middle = False
             for point in box:
                 if (point[1] > (height/3) and point[1] < (height*(3/2)) and area > minBoxArea):
                     cv2.drawContours(disparity, [box], 0, (255, 0, 0), 2)
-                    cv2.drawContours(rectified_pair[0], [box2], 0, (255, 0, 0), 2)
+                    cv2.drawContours(rectified_pair[0], [boxOverlayRectified], 0, (255, 0, 0), 2)
                     middle = True
                     break
 
+            # calculate min and max Y value from tuples
             if not middle:
                 yMin = max(box, key=lambda x:x[1])
                 yMin = yMin[1]
@@ -118,25 +116,32 @@ try:
                 yMax = yMax[1]
 
 
-                if yMax > (height*(3/2)) and yMin < (height/3) and area >minBoxArea:
+                if yMax > (height*(3/2)) and yMin < (height/3) and area > minBoxArea:
                     cv2.drawContours(disparity, [box], 0, (255, 0, 0), 2)
-                    cv2.drawContours(rectified_pair[0],[box2], 0, (255, 0, 0), 2)
+                    cv2.drawContours(rectified_pair[0],[boxOverlayRectified], 0, (255, 0, 0), 2)
 
 
-        cv2.imshow("a",rectified_pair[0])
+        cv2.imshow("a", rectified_pair[0])
         cv2.imshow("disparity", disparity)
-##        cv2.imshow("b", rectified_pair[1])
-        cv2.line(disparity, (0,80), (320,80), .5, 8, 0)
-        cv2.line(disparity, (0,160), (320,160), .5, 8, 0)
-        endT = time()
-        print("Frame " + str(counter) +" complete -- Time: " + str(endT-startT))
+
+
+        # plot line on disparity map
+        # points, color, thickness, type of line (8 connected), # of fractional bits in coordinates
+        cv2.line(disparity, (0,80), (320,80), 0.5, 8, 0)
+        cv2.line(disparity, (0,160), (320,160), 0.5, 8, 0)
+
+        # end frame calculation
+        endTime = time()
+        print("Frame " + str(counter) + " complete -- Time: " + str(endTime - startTime))
         key = cv2.waitKey(1)
-        
+
+        timeData.write(str(endTime - startTime) + "\n")
+        timeData.flush()
+        # save data to the file
+
+
 except KeyboardInterrupt:
-    print(disparity)
-    print(disparity.max())
-    print(shapeMask)
-    print(shapeMask.max())
+    # quit on Ctrl-C
     pass
     
 cv2.destroyAllWindows()
