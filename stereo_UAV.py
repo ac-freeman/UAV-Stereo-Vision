@@ -15,7 +15,7 @@ height = 240
 minBoxArea = 150
 res = (width, height)
 camera.resolution = res
-camera.framerate = 90
+camera.framerate = 60
 
 rawCapture = PiRGBArray(camera, size=res)
 calibration = StereoCalibration(input_folder = "/home/pi/Desktop/programs2017/PiCAM PHOTOS/calibfiles")
@@ -43,7 +43,7 @@ try:
         startTime = time()
 
         # left frame
-        cameras("C")
+        cameras("D")
         if counter == 7:
             camera.exposure_mode = 'off'
             camera.shutter_speed = (camera.exposure_speed)
@@ -57,7 +57,7 @@ try:
         sleep(0.03)
 
         # right frame
-        cameras("A")
+        cameras("D")
         camera.capture(rawCapture, format="bgr", use_video_port=True)
         frameA = rawCapture.array
         rawCapture.truncate(0)
@@ -120,7 +120,7 @@ try:
                     cv2.drawContours(disparity, [box], 0, (255, 0, 0), 2)
                     cv2.drawContours(rectified_pair[0],[boxOverlayRectified], 0, (255, 0, 0), 2)
 
-
+        cv2.imshow("framea", frameA)
         cv2.imshow("a", rectified_pair[0])
         cv2.imshow("disparity", disparity)
 
