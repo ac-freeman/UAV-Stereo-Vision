@@ -10,15 +10,15 @@ from piCams import *
 # set up camera object
 # interface with one port
 camera = PiCamera()
-width = 320
-height = 240
+width = 640
+height = 480
 minBoxArea = 150
 res = (width, height)
 camera.resolution = res
-camera.framerate = 60
+camera.framerate = 90
 
 rawCapture = PiRGBArray(camera, size=res)
-calibration = StereoCalibration(input_folder = "/home/pi/Desktop/programs2017/PiCAM PHOTOS/calibfiles")
+calibration = StereoCalibration(input_folder = "/home/pi/Desktop/programs2017/UAV-Stereo-Vision/calib7/calibfiles")
 block_matcher = StereoBM() # from stereovision.blockmatchers
 
 block_matcher.search_range = 80
@@ -42,8 +42,8 @@ try:
         # begin frame calculation
         startTime = time()
 
-        # left frame
-        cameras("D")
+        # Right frame
+        cameras("C")
         if counter == 7:
             camera.exposure_mode = 'off'
             camera.shutter_speed = (camera.exposure_speed)
@@ -56,8 +56,8 @@ try:
 
         sleep(0.03)
 
-        # right frame
-        cameras("D")
+        # Left frame
+        cameras("A")
         camera.capture(rawCapture, format="bgr", use_video_port=True)
         frameA = rawCapture.array
         rawCapture.truncate(0)
@@ -102,7 +102,7 @@ try:
 
             middle = False
             for point in box:
-                if (point[1] > (height/3) and point[1] < (height*(3/2)) and area > minBoxArea):
+                if (point[1] > (height/3.0) and point[1] < (height*(2/3.0)) and area > minBoxArea):
                     cv2.drawContours(disparity, [box], 0, (255, 0, 0), 2)
                     cv2.drawContours(rectified_pair[0], [boxOverlayRectified], 0, (255, 0, 0), 2)
                     middle = True
@@ -116,19 +116,24 @@ try:
                 yMax = yMax[1]
 
 
-                if yMax > (height*(3/2)) and yMin < (height/3) and area > minBoxArea:
+                if yMax > (height*(2/3.0)) and yMin < (height/3.0) and area > minBoxArea:
                     cv2.drawContours(disparity, [box], 0, (255, 0, 0), 2)
                     cv2.drawContours(rectified_pair[0],[boxOverlayRectified], 0, (255, 0, 0), 2)
 
-        cv2.imshow("framea", frameA)
-        cv2.imshow("a", rectified_pair[0])
-        cv2.imshow("disparity", disparity)
+##        cv2.imshow("frameA", frameA)
+##        cv2.imshow("frameC", frameC)
+
 
 
         # plot line on disparity map
         # points, color, thickness, type of line (8 connected), # of fractional bits in coordinates
         cv2.line(disparity, (0,80), (320,80), 0.5, 8, 0)
         cv2.line(disparity, (0,160), (320,160), 0.5, 8, 0)
+
+
+        cv2.imshow("a", rectified_pair[0])
+        cv2.imshow("c", rectified_pair[1])
+        cv2.imshow("disparity", disparity)
 
         # end frame calculation
         endTime = time()

@@ -68,7 +68,7 @@ def finished():
     gp.output(12, True)
 
 camera = PiCamera()
-res = (320, 240)
+res = (640, 480)
 camera.resolution = res
 camera.framerate = 90
 rawCapture = PiRGBArray(camera, size=res)
@@ -80,7 +80,7 @@ counter = 0
 counter2 = 0
 try: 
     while True:
-        cameras("B")
+        cameras("C")
         if counter == 7:
             camera.exposure_mode = 'off'
             camera.shutter_speed = (camera.exposure_speed)
@@ -88,7 +88,7 @@ try:
             print("auto exposure off")
         camera.capture(rawCapture, format="bgr", use_video_port=True)
         frameC = rawCapture.array
-        frameC = cv2.cvtColor(frameC, cv2.COLOR_BGR2GRAY)
+##        frameC = cv2.cvtColor(frameC, cv2.COLOR_BGR2GRAY)
 ##        rows, cols = frameC.shape
 ##        M = cv2.getRotationMatrix2D((cols/2,rows/2),180,1)
 ##        frameC = cv2.warpAffine(frameC,M,(cols,rows))
@@ -99,11 +99,11 @@ try:
 
         sleep(0.03)
 
-        cameras("D")
+        cameras("A")
 
         camera.capture(rawCapture, format="bgr", use_video_port=True)
         frameA = rawCapture.array
-        frameA = cv2.cvtColor(frameA, cv2.COLOR_BGR2GRAY)
+##        frameA = cv2.cvtColor(frameA, cv2.COLOR_BGR2GRAY)
 
 
         # display the image on screen and wait for a keypress
@@ -114,10 +114,15 @@ try:
         key = cv2.waitKey(10)
 
 
-        if counter%15 == 0:
+        if counter%5 == 0:
             counter2 += 1
-            cv2.imwrite("left_"+str(counter2)+".ppm", frameA)
-            cv2.imwrite("right_"+str(counter2)+".ppm", frameC)
+            if(counter2 <10):
+                
+                cv2.imwrite("left_0"+str(counter2)+".ppm", frameA)
+                cv2.imwrite("right_0"+str(counter2)+".ppm", frameC)
+            else:
+                cv2.imwrite("left_"+str(counter2)+".ppm", frameA)
+                cv2.imwrite("right_"+str(counter2)+".ppm", frameC)
             print("Saved image "+ str(counter2))
         counter += 1
 
