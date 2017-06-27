@@ -15,9 +15,10 @@ import math
 
 auto = False
 
-def moveForward(drone):
+def moveForward():
+    print("moving forward")
     drone.moveBackward(0.1)
-    sleep(0.5)
+    sleep(0.8)
     drone.stop()
     drone.hover()
     sleep(0.5)
@@ -93,7 +94,7 @@ def keyboardDrone(drone):
     elif key == "o":    auto = not auto
 
 
-calibration = StereoCalibration(input_folder = "/home/pi/Desktop/programs2017/UAV-Stereo-Vision-Webcams/USBcamCalib8/calibFiles")
+calibration = StereoCalibration(input_folder = "/home/pi/Desktop/programs2017/UAV-Stereo-Vision-Webcams/USBcamCalib11")
 block_matcher = StereoBM() # from stereovision.blockmatchers
 block_matcher.search_range = 48
 block_matcher.bm_preset = 0
@@ -176,7 +177,8 @@ try:
             print("Real width: " + str(realwidth))
             print("Real height: " + str(realheight))
 
-        if counter % 10 == 0:
+        if counter % 5 == 0:
+
         
     ##        imgL = cv2.resize(imgL, (0,0), fx=1.0/sample, fy=1.0/sample)
             
@@ -265,7 +267,6 @@ try:
                                 disparity2 = disparity2.astype(int)
                                 cv2.imwrite("/"+str(startTime)+"/"+str(counter)+"_disparity_box"+".jpg", disparity2)
                                 moved = True
-                                
 
                         
                         middle = True
@@ -291,7 +292,10 @@ try:
                                 cv2.imwrite("/"+str(startTime)+"/"+str(counter)+"_disparity_box"+".jpg", disparity2)
                                 moved = True
 
-##            cv2.imwrite("/"+str(startTime)+"/disparity"+".jpg", disparity)
+            if not moved and auto and (counter % 10) == 0:
+                moveForward()
+
+##            cv2.imwrite("disparity"+".jpg", disparity)
             cv2.imshow("disparity", disparity)
 
 
