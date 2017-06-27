@@ -24,35 +24,10 @@ def moveForward():
     sleep(0.5)
 
 def avoidBack():
-##    drone.moveBackward()
-##    print("moving back")
-##    sleep(.8).
-##    print("stopped")
-##    drone.stop()
-##    sleep(1)
-
-    
-##    print("turning")
-##    drone.turnAngle(45, 1)
-##    sleep(2)
-##    drone.turnAngle(30, 1)
-##    sleep(2)
-    
-##    drone.stop()
-##    drone.turnAngle(30, 5)
-##    drone.stop()
-##    drone.turnAngle(30, 5)
-##    print("moving back")
-##    drone.moveBackward()
-
     print("moving back")
     drone.moveForward()
-
     sleep(1.5)
     drone.hover()
-
-##    print("landing")
-##    drone.land()
   
 def maxRatio(box, ratio):
     """Determine length/width ratio of bounding box.
@@ -71,8 +46,6 @@ def keyboardDrone(drone):
     if key == " ":      drone.takeoff()
     elif key == "m":    moveForward(drone)
     elif key == "l":    drone.land()
-        #if drone.NavData["demo"][0][2] and not drone.NavData["demo"][0][3]:	drone.takeoff()
-        #else:																drone.land()
     elif key == "0":	drone.hover()
     elif key == "w":	drone.moveForward()
     elif key == "s":	drone.moveBackward()
@@ -99,9 +72,7 @@ block_matcher = StereoBM() # from stereovision.blockmatchers
 block_matcher.search_range = 48
 block_matcher.bm_preset = 0
 block_matcher.window_size = 31
-##minBoxArea = 2000
-
-minBoxArea = 1750
+minBoxArea = 2000
 maxLengthWidthRatio = 3
 height = 480
 width = 640
@@ -117,7 +88,7 @@ vcR.set(5,5)
 vcL.set(21,1)
 vcR.set(21,1)
 
-sleep(0.5) # enable camera to start up
+sleep(0.5)
 
 counter2 = 0
 
@@ -125,7 +96,6 @@ counter2 = 0
 timeData = open("timeData.txt", 'w')
 # clear old data
 timeData.truncate()
-##sleep(60)
 
 sample = 1.0
 
@@ -138,7 +108,7 @@ global shapeMask
 global disparityProcessed
 global temp
 
-print("initializing globals")
+print("Initializing globals")
 
 counter = 0
 rvalL, imgL = vcL.read()
@@ -158,15 +128,15 @@ drone.startup()
 drone.setSpeed(0.1)
 
 print(drone.getBattery()[0])
-print("cameras ready")
+print("Cameras ready")
 
-##drone.takeoff()
+startProg = time()
 
 try:
     while True:
         keyboardDrone(drone)
         counter += 1
-        # begin frame calculation
+        # Begin frame calculation
         startTime = time()
 
         rvalL, imgL = vcL.read()
@@ -179,59 +149,21 @@ try:
 
         if counter % 5 == 0:
 
-        
-    ##        imgL = cv2.resize(imgL, (0,0), fx=1.0/sample, fy=1.0/sample)
-            
-    ##        frameC = cv2.cvtColor(frameC, cv2.COLOR_BGR2GRAY)
-
-    ##        cv2.imshow("imgL -- left", imgL)
-
-    ##        imgR = cv2.resize(imgR, (0,0), fx=1.0/sample, fy=1.0/sample)
-            
-            # display the image on screen and wait for a keypress
-    ##        cv2.imshow("imgR -- right", imgR)
-        ##    key = cv2.waitKey(1)
-
-    ##        rvalL = vcL.grab()
-    ##        rvalR = vcR.grab()
-
             rectified_pair = calibration.rectify((imgL, imgR))
-
-    ##        rvalL = vcL.grab()
-    ##        rvalR = vcR.grab()
-            
             disparity = block_matcher.get_disparity(rectified_pair)
-            
-            disparity = disparity / disparity.max()
-            
-
-            # normalize disparity in [0, 1]
-
-    ##        rvalL = vcL.grab()
-    ##        rvalR = vcR.grab()
+            disparity = disparity / disparity.max() # Normalize disparity in [0, 1]
 
             _, shapeMask = cv2.threshold(disparity, 0.5, 1.0, cv2.THRESH_BINARY)
             
-    ##        shapeMask = cv2.morphologyEx(shapeMask, cv2.MORPH_CLOSE,kernel)
             disparityProcessed = shapeMask.copy()
             disparityProcessed = disparityProcessed * 255.0
-            disparityProcessed = disparityProcessed.astype(int)
-            # bring into 255 range
+            disparityProcessed = disparityProcessed.astype(int) # Bring into 0-255 range
 
             disparityProcessed = cv2.convertScaleAbs(disparityProcessed)
-
-    ##        rvalL = vcL.grab()
-    ##        rvalR = vcR.grab()
             
-            contours, _ = cv2.findContours(disparityProcessed, 1, 2)
-            # find contours from thresholded disparity map
-
+            contours, _ = cv2.findContours(disparityProcessed, 1, 2) # Find contours from thresholdeded disparity map
             disparityProcessed = cv2.cvtColor(disparityProcessed, cv2.COLOR_GRAY2RGB)
-    ##        cv2.imshow("disparityProcessed", disparityProcessed)
-    ##        cv2.imshow("left_rectified_nobox", rectified_pair[0])
-    ##        cv2.imshow("disparity_nobox", disparity)
                             
-
             moved = False
             for cnt in contours:          
                 rect = cv2.minAreaRect(cnt)
@@ -250,7 +182,6 @@ try:
                     area -= box[j][0] * box[i][1]
                 area = abs(area) / 2.0
 
-
                 middle = False
                 
                 for point in box:
@@ -262,17 +193,16 @@ try:
 
                             if auto and not moved:
                                 avoidBack()
-                                cv2.imwrite("/"+str(startTime)+"/"+str(counter)+"_left_rectified_box"+".jpg", rectified_pair[0])
+                                cv2.imwrite(str(startProg)+"_"+str(counter)+"_left_rectified_box"+".jpg", rectified_pair[0])
                                 disparity2 = disparity * 255.0
                                 disparity2 = disparity2.astype(int)
-                                cv2.imwrite("/"+str(startTime)+"/"+str(counter)+"_disparity_box"+".jpg", disparity2)
+                                cv2.imwrite(str(startProg)+"_"+str(counter)+"_disparity_box"+".jpg", disparity2)
                                 moved = True
-
-                        
+             
                         middle = True
                         break
 
-                # calculate min and max Y value from tuples
+                # Calculate min and max Y value from tuples
                 if not middle:
                     yMin = max(box, key=lambda x:x[1])
                     yMin = yMin[1]
@@ -286,54 +216,34 @@ try:
                             cv2.drawContours(rectified_pair[0], [boxOverlayRectified], 0, (255, 0, 0), 2)
                             if auto and not moved:
                                 avoidBack()
-                                cv2.imwrite("/"+str(startTime)+"/"+str(counter)+"_left_rectified_box"+".jpg", rectified_pair[0])
+                                cv2.imwrite(str(startProg)+"_"+str(counter)+"_left_rectified_box"+".jpg", rectified_pair[0])
                                 disparity2 = disparity * 255.0
                                 disparity2 = disparity2.astype(int)
-                                cv2.imwrite("/"+str(startTime)+"/"+str(counter)+"_disparity_box"+".jpg", disparity2)
+                                cv2.imwrite(str(startProg)+"_"+str(counter)+"_disparity_box"+".jpg", disparity2)
                                 moved = True
 
             if not moved and auto and (counter % 10) == 0:
                 moveForward()
 
-##            cv2.imwrite("disparity"+".jpg", disparity)
             cv2.imshow("disparity", disparity)
-
-
-            
-    ##        cv2.imshow("left_unrectified", imgL)
-
-##            cv2.imshow("left_rectified_box", rectified_pair[0])
-    ##        cv2.imshow("right_rectified", rectified_pair[1])
-##            cv2.imshow("disparity_box", disparity)
-
             key = cv2.waitKey(10)
 
-
-##        cv2.imshow("left", imgL)
-
-        
-##        cv2.imshow("shapeMask", shapeMask)
-##        cv2.imshow("disparityProcessed", disparityProcessed)
-
-
-        # end frame calculation
+        # End frame calculation
         endTime = time()
         print("Frame " + str(counter) + " complete -- Time: " + str(endTime - startTime) + " Auto: " + str(auto))
         print("Battery: " + str(drone.getBattery()[0]))
         key = cv2.waitKey(1)
 
+        # Save data to the file
         timeData.write(str(endTime - startTime) + "\n")
         timeData.flush()
-        # save data to the file
-##        if moved:
-##            break
-##        if counter == 75:
-##            break
+    
         
 except KeyboardInterrupt:
         drone.land()
         vcL.release()
         vcR.release()
         pass
+
 vcL.release()
 cv2.destroyAllWindows()
