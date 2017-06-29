@@ -9,7 +9,7 @@ This software was created for research into autonomous UAVs, to test real-time o
 
 [Technical report](https://www.dropbox.com/s/w7c4dtqewld8rgs/real-time-collision%20v2.pdf?dl=0)
 
-[Website](https://acfworks.wordpress.com/2017/06/12/uav-reu/)
+[Website](https://acfworks.wordpress.com/2017/06/29/uav-reu/)
 
 [Video demonstration](https://www.youtube.com/watch?v=eTOpzNkPVcI&feature=youtu.be")
 
