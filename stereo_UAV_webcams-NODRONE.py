@@ -16,29 +16,7 @@ import math
 auto = True
 
 def avoidBack():
-##    drone.moveBackward()
-##    print("moving back")
-##    sleep(.8)
-##    print("stopped")
-##    drone.stop()
-##    sleep(1)
-
-    
-##    print("turning")
-##    drone.turnAngle(45, 1)
-##    sleep(2)
-##    drone.turnAngle(30, 1)
-##    sleep(2)
-    
-##    drone.stop()
-##    drone.turnAngle(30, 5)
-##    drone.stop()
-##    drone.turnAngle(30, 5)
-##    print("moving back")
-##    drone.moveBackward()
-
     print("landing")
-##    drone.land()
   
 def maxRatio(box, ratio):
     """Determine length/width ratio of bounding box.
@@ -77,18 +55,12 @@ def keyboardDrone(drone):
     elif key == "+":	drone.doggyNod()
     elif key == "-":	drone.doggyWag()
     elif key == "o":    auto = not auto
-        
-##drone = ps_drone.Drone()
-##drone.startup()
-##drone.setSpeed(0.1)
-
 
 calibration = StereoCalibration(input_folder = "/home/pi/Desktop/programs2017/UAV-Stereo-Vision-Webcams/USBcamCalib8/calibFiles")
 block_matcher = StereoBM() # from stereovision.blockmatchers
 block_matcher.search_range = 48
 block_matcher.bm_preset = 0
 block_matcher.window_size = 31
-##minBoxArea = 2000
 
 minBoxArea = 2000
 maxLengthWidthRatio = 3
@@ -106,7 +78,7 @@ vcR.set(5,5)
 vcL.set(21,1)
 vcR.set(21,1)
 
-sleep(0.5) # enable camera to start up
+sleep(0.5)
 
 counter = 0
 counter2 = 0
@@ -140,40 +112,24 @@ print("cameras ready")
 timeData = open("timeData.txt", 'w')
 # clear old data
 timeData.truncate()
-##sleep(60)
-##drone.takeoff()
 
 sample = 1.0
 
 try: 
     while True:
-##        keyboardDrone(drone)
         counter += 1
         # begin frame calculation
         startTime = time()
-        
+    
         rvalL, imgL = vcL.read()
         rvalR, imgR = vcR.read()
         
-##        imgL = cv2.resize(imgL, (0,0), fx=1.0/sample, fy=1.0/sample)
-        
-##        frameC = cv2.cvtColor(frameC, cv2.COLOR_BGR2GRAY)
         if(counter == 5):
             realheight, realwidth = imgL.shape[:2]
             print("Real width: " + str(realwidth))
             print("Real height: " + str(realheight))
 
-##        cv2.imshow("imgL -- left", imgL)
-
         if counter % 10 == 0:
-
-    ##        imgR = cv2.resize(imgR, (0,0), fx=1.0/sample, fy=1.0/sample)
-            
-
-            # display the image on screen and wait for a keypress
-    ##        cv2.imshow("imgR -- right", imgR)
-        ##    key = cv2.waitKey(1)
-
             key = cv2.waitKey(10)
 
             rectified_pair = calibration.rectify((imgL, imgR))
@@ -185,7 +141,6 @@ try:
 
             _, shapeMask = cv2.threshold(disparity, 0.7, 1.0, cv2.THRESH_BINARY)
             
-    ##        shapeMask = cv2.morphologyEx(shapeMask, cv2.MORPH_CLOSE,kernel)
             disparityProcessed = shapeMask.copy()
             disparityProcessed = disparityProcessed * 255.0
             disparityProcessed = disparityProcessed.astype(int)
@@ -197,10 +152,6 @@ try:
             # find contours from thresholded disparity map
 
             disparityProcessed = cv2.cvtColor(disparityProcessed, cv2.COLOR_GRAY2RGB)
-    ##        cv2.imshow("disparityProcessed", disparityProcessed)
-    ##        cv2.imshow("left_rectified_nobox", rectified_pair[0])
-    ##        cv2.imshow("disparity_nobox", disparity)
-                            
 
             moved = False
             for cnt in contours:          
@@ -220,7 +171,6 @@ try:
                     area -= box[j][0] * box[i][1]
                 area = abs(area) / 2.0
 
-
                 middle = False
                 
                 for point in box:
@@ -232,10 +182,6 @@ try:
 
                             if auto and not moved:
                                 avoidBack()
-    ##                            cv2.imwrite(str(counter)+"_left_rectified_box"+".jpg", rectified_pair[0])
-    ##                            disparity2 = disparity * 255.0
-    ##                            disparity2 = disparity2.astype(int)
-    ##                            cv2.imwrite(str(counter)+"_disparity_box"+".jpg", disparity2)
                                 moved = True
                                 
 
@@ -257,27 +203,10 @@ try:
                             cv2.drawContours(rectified_pair[0], [boxOverlayRectified], 0, (255, 0, 0), 2)
                             if auto and not moved:
                                 avoidBack()
-    ##                            cv2.imwrite(str(counter)+"_left_rectified_box"+".jpg", rectified_pair[0])
-    ##                            disparity2 = disparity * 255.0
-    ##                            disparity2 = disparity2.astype(int)
-    ##                            cv2.imwrite(str(counter)+"_disparity_box"+".jpg", disparity2)
                                 moved = True
 
-
-        
-##        cv2.imshow("left_unrectified", imgL)
-
         cv2.imshow("left_rectified_box", rectified_pair[0])
-##        cv2.imshow("right_rectified", rectified_pair[1])
         cv2.imshow("disparity_box", disparity)
-
-
-        
-
-        
-##        cv2.imshow("shapeMask", shapeMask)
-##        cv2.imshow("disparityProcessed", disparityProcessed)
-
 
         # end frame calculation
         endTime = time()
@@ -286,17 +215,12 @@ try:
 
         timeData.write(str(endTime - startTime) + "\n")
         timeData.flush()
-        # save data to the file
-##        if moved:
-##            break
-##        if counter == 75:
-##            break
         
 except KeyboardInterrupt:
-##        drone.land()
         vcL.release()
         vcR.release()
         pass
+    
 vcL.release()
 vcR.release()
 cv2.destroyAllWindows()
