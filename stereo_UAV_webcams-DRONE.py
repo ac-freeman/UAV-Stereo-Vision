@@ -126,6 +126,8 @@ disparityProcessed = shapeMask.copy()
 drone = ps_drone.Drone()
 drone.startup()
 drone.setSpeed(0.1)
+drone.getNDpackage(["demo"])
+ang = 10
 
 print(drone.getBattery()[0])
 print("Cameras ready")
@@ -141,6 +143,13 @@ try:
 
         rvalL, imgL = vcL.read()
         rvalR, imgR = vcR.read()
+
+        pitch = drone.NavData["demo"][2][0]
+        roll = drone.NavData["demo"][2][1]
+
+        if(pitch > ang or pitch < -ang or roll > ang or roll < -ang):
+            print("EMERGENCY LANDING - Pitch: " + str(pitch) + " Roll: " +str(roll))
+            drone.land()
 
         if(counter == 5):
             realheight, realwidth = imgL.shape[:2]
