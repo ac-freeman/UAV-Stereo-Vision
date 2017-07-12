@@ -9,9 +9,11 @@ This software was created for research into autonomous UAVs, to test real-time o
 
 [Technical report](https://www.dropbox.com/s/1whomo1a4w6zom5/uav-collision-avoidance-v9.pdf?dl=0)
 
-[Website](https://acfworks.wordpress.com/2017/06/29/uav-reu/)
-
 [Video demonstration](https://www.youtube.com/watch?v=eTOpzNkPVcI&feature=youtu.be")
+
+[Andrew Freeman's Website](https://acfworks.wordpress.com/2017/06/29/uav-reu/)
+
+[Daniel Suen's Website](https://danielsuenwork.wordpress.com/auburn-reu-on-smart-uavs/)
 
 ## Open-source libraries
 	
